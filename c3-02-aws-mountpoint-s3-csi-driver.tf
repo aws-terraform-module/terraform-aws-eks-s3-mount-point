@@ -1,5 +1,4 @@
 # Install EFS CSI Driver using HELM
-
 # Resource: Helm Release 
 resource "helm_release" "aws-mountpoint-s3-csi-driver" {
   depends_on = [aws_iam_role.mountpoint_s3_csi_iam_role]            
