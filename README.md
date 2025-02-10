@@ -8,6 +8,8 @@ You can refer to [https://nimtechnology.com/2025/02/08/eks-s3-mount-point-create
 
 ### Install S3 Mount Point on EKS
 
+[eks-s3-mount-point terraform module](https://registry.terraform.io/modules/aws-terraform-module/eks-s3-mount-point/aws/latest)
+
 #### When you install EKS cluster by Terraform Module:
 
 ```hcl
