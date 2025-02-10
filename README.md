@@ -41,3 +41,86 @@ module "eks-s3-mount-point" {
   aws_iam_openid_connect_provider_arn = data.terraform_remote_state.eks.outputs.oidc_provider_arn
 }
 ```
+
+### Create PVC and PV
+
+S3 volume is the static provisioning volume.  
+Create a PVC and PV before mounting to the pod.  
+(Please ignore capacity.storage in `PersistentVolume` and `requests`.`storage` in `PersistentVolumeClaim`  , AND Don't remove them.)
+
+```yaml
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: s3-pv
+spec:
+  capacity:
+    storage: 1200Gi # ignored, required
+  accessModes:
+    - ReadWriteMany 
+  storageClassName: "" # Required for static provisioning
+  claimRef: # To ensure no other PVCs can claim this PV
+    namespace: default # Namespace is required even though it's in "default" namespace.
+    name: s3-pvc # Name of your PVC
+  mountOptions:
+    - allow-delete # If you want to allow file deletion, use the --allow-delete flag at mount time. Delete operations immediately delete the object from S3, even if the file is being read from.
+    - region eu-central-1 # The AWS region where the bucket is located.
+    - uid=100
+    - gid=101
+    - dir-mode=0777
+    - file-mode=0777
+    - allow-other
+    - allow-overwrite
+  csi:
+    driver: s3.csi.aws.com # required
+    volumeHandle: s3-bucket-nimtechnology-volume 
+    volumeAttributes:
+      bucketName: s3-bucket-nimtechnology # The name of the S3 bucket.
+      #authenticationSource: pod # To configure the Mountpoint CSI Driver to use Pod-Level Credentials, configure your PV using authenticationSource: pod in the volumeAttributes section
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: s3-pvc
+spec:
+  accessModes:
+    - ReadWriteMany # Supported options: ReadWriteMany / ReadOnlyMany
+  storageClassName: "" # Required for static provisioning
+  resources:
+    requests:
+      storage: 1200Gi # Ignored, required
+  volumeName: s3-pv # Name of your PV
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: s3-app
+  labels:
+    app: s3-app
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: s3-app
+  template:
+    metadata:
+      labels:
+        app: s3-app
+    spec:
+      containers:
+      - name: s3-app
+        image: centos
+        command: ["/bin/sh"]
+        args: ["-c", "echo 'Hello from the container!' >> /data/$(date -u).txt; tail -f /dev/null"]
+        volumeMounts:
+        - name: persistent-storage
+          mountPath: /data
+        ports:
+        - containerPort: 80
+      nodeSelector:
+        kubernetes.io/os: linux
+      volumes:
+      - name: persistent-storage
+        persistentVolumeClaim:
+          claimName: s3-pvc
+```
