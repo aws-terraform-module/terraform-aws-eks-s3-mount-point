@@ -1,11 +1,11 @@
 resource "aws_s3_bucket" "s3_mount_point" {
-  bucket = "${var.s3-bucket-name}"  # Replace with a unique bucket name
+  bucket = var.s3-bucket-name # Replace with a unique bucket name
 
   tags = merge(
     {
       Name = var.s3-bucket-name
     },
-    var.extra_tags  # Merge the extra tags here
+    var.extra_tags # Merge the extra tags here
   )
 }
 
@@ -15,39 +15,39 @@ resource "aws_iam_policy" "mountpoint_s3_csi_iam_policy" {
   path        = "/"
   description = "Create S3 Mount Point CSI IAM Policy"
   policy = jsonencode({
-   "Version": "2012-10-17",
-   "Statement": [
-        {
-            "Sid": "MountpointFullBucketAccess",
-            "Effect": "Allow",
-            "Action": [
-                "s3:ListBucket"
-            ],
-            "Resource": [
-                "arn:aws:s3:::${var.s3-bucket-name}"
-            ]
-        },
-        {
-            "Sid": "MountpointFullObjectAccess",
-            "Effect": "Allow",
-            "Action": [
-                "s3:GetObject",
-                "s3:PutObject",
-                "s3:AbortMultipartUpload",
-                "s3:DeleteObject"
-            ],
-            "Resource": [
-                "arn:aws:s3:::${var.s3-bucket-name}/*"
-            ]
-        }
-   ]
-})
-    tags = merge(
+    "Version" : "2012-10-17",
+    "Statement" : [
+      {
+        "Sid" : "MountpointFullBucketAccess",
+        "Effect" : "Allow",
+        "Action" : [
+          "s3:ListBucket"
+        ],
+        "Resource" : [
+          "arn:aws:s3:::${var.s3-bucket-name}"
+        ]
+      },
+      {
+        "Sid" : "MountpointFullObjectAccess",
+        "Effect" : "Allow",
+        "Action" : [
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:AbortMultipartUpload",
+          "s3:DeleteObject"
+        ],
+        "Resource" : [
+          "arn:aws:s3:::${var.s3-bucket-name}/*"
+        ]
+      }
+    ]
+  })
+  tags = merge(
     {
       Name = "${var.s3-bucket-name}_AmazonEKS_S3_Mount_Point_CSI_Driver_Policy"
     },
-    var.extra_tags  # Merge the extra tags here
-    )
+    var.extra_tags # Merge the extra tags here
+  )
 
 }
 
@@ -68,7 +68,7 @@ resource "aws_iam_role" "mountpoint_s3_csi_iam_role" {
         }
         Condition = {
           StringEquals = {
-            "${local.aws_iam_openid_connect_provider_extract_from_arn}:sub": "system:serviceaccount:kube-system:s3-csi-driver-sa"
+            "${local.aws_iam_openid_connect_provider_extract_from_arn}:sub" : "system:serviceaccount:kube-system:s3-csi-driver-sa"
           }
         }
       },
@@ -79,8 +79,8 @@ resource "aws_iam_role" "mountpoint_s3_csi_iam_role" {
     {
       Name = "${var.s3-bucket-name}-mountpoint-s3-csi-iam-role"
     },
-    var.extra_tags  # Merge the extra tags here
-    )
+    var.extra_tags # Merge the extra tags here
+  )
 }
 
 # Associate S3 Mount Point CSI IAM Policy to S3 Mount Point CSI IAM Role
@@ -91,5 +91,5 @@ resource "aws_iam_role_policy_attachment" "mountpoint_s3_csi_iam_role_policy_att
 
 output "mountpoint_s3_csi_iam_role_arn" {
   description = "S3 Mount Point CSI IAM Role ARN"
-  value = aws_iam_role.mountpoint_s3_csi_iam_role.arn
+  value       = aws_iam_role.mountpoint_s3_csi_iam_role.arn
 }
